@@ -1,22 +1,22 @@
+package crawl;
+
+import java.io.PrintWriter;
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
 import edu.uci.ics.crawler4j.crawler.Page;
 import edu.uci.ics.crawler4j.crawler.WebCrawler;
 import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
-public class MyCrawler extends WebCrawler {
+public class ManowarCrawler extends WebCrawler {
 
 	private final static Pattern FILTERS = Pattern
 			.compile(".*(\\.(css|js|bmp|gif|jpe?g"
@@ -26,6 +26,8 @@ public class MyCrawler extends WebCrawler {
 	
 	Map<String, WebURL> visitedUrls = new HashMap<>();
 
+	boolean nextName = false;
+
 	/**
 	 * You should implement this function to specify whether the given url
 	 * should be crawled or not (based on your crawling logic).
@@ -33,7 +35,7 @@ public class MyCrawler extends WebCrawler {
 	@Override
 	public boolean shouldVisit(WebURL url) {
         String href = url.getURL().toLowerCase();
-        if(!href.startsWith("http://www.darklyrics.com/lyrics/manowar/")){
+        if(!href.startsWith("http://www.lyricsfreak.com/m/manowar/")){
             return false;
         }
 		if(this.visitedUrls.containsKey(url.getURL())) {
@@ -53,29 +55,37 @@ public class MyCrawler extends WebCrawler {
 	public void visit(Page page) {
 		String url = page.getWebURL().getURL();
 		System.out.println("URL: " + url);
+		try {
+			Thread.sleep(2000L);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 
 		if (page.getParseData() instanceof HtmlParseData) {
 			HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
-			String text = htmlParseData.getText();
 			String html = htmlParseData.getHtml();
 
-            Document doc = Jsoup.parse(html);
-            PrintWriter writer = null;
-            try {
-                writer = new PrintWriter("the-file-name.txt", "UTF-8");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+			// parse html
+			Document doc = Jsoup.parse(html);
+			String songName = doc.select("h2.lyric-song-head").first().text();
+			String songText = doc.select("div#content_h").first().text();
 
-            writer.println(html);
-            writer.close();
-            Elements div = doc.select("div.lyrics");
-            //Element head = doc.select("#head").first();
-			List<WebURL> links = htmlParseData.getOutgoingUrls();
+			if (songText != null && songText != "") {
+			// save to db
+				MongoClient mongoClient = null;
+				try {
+					mongoClient = new MongoClient("localhost", 27017);
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				}
+				DB db = mongoClient.getDB("testmining");
+				DBCollection coll = db.getCollection("songs");
 
-			System.out.println("Text length: " + text.length());
-			System.out.println("Html length: " + html.length());
-			System.out.println("Number of outgoing links: " + links.size());
+				BasicDBObject song = new BasicDBObject("name", songName)
+						.append("text", songText);
+				coll.insert(song);
+			}
+
 		}
 	}
 }
