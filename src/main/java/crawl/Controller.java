@@ -7,7 +7,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 public class Controller {
-    public static void main(String[] args) throws Exception {
+    public static void parse() throws Exception {
             String crawlStorageFolder = "/data/crawler";
             int numberOfCrawlers = 1;
 
@@ -27,7 +27,7 @@ public class Controller {
              * URLs that are fetched and then the crawler starts following links
              * which are found in these pages
              */
-            controller.addSeed("http://www.lyricsfreak.com/m/manowar/");
+            controller.addSeed("http://www.lyricsfreak.com/o/ozzy+osbourne/");
 
             /*
              * Start the crawl. This is a blocking operation, meaning that your code

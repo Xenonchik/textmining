@@ -1,6 +1,5 @@
 package crawl;
 
-import java.io.PrintWriter;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,9 +34,8 @@ public class ManowarCrawler extends WebCrawler {
 	@Override
 	public boolean shouldVisit(WebURL url) {
         String href = url.getURL().toLowerCase();
-        if(!href.startsWith("http://www.lyricsfreak.com/m/manowar/")){
-            return false;
-        }
+        if(!href.startsWith("http://www.lyricsfreak.com/o/ozzy+osbourne/")) return false;
+		if((href.length() - href.replace(":", "").length()) > 1) return false;
 		if(this.visitedUrls.containsKey(url.getURL())) {
 			return false;
 		} else {
