@@ -1,7 +1,8 @@
 package db;
 
-import java.util.Set;
-import com.mongodb.*;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
 
 /**
  * Blahblahblah

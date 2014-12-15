@@ -8,6 +8,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
+import db.SongAnalyser;
+import db.SongDAO;
 import edu.uci.ics.crawler4j.crawler.Page;
 import edu.uci.ics.crawler4j.crawler.WebCrawler;
 import edu.uci.ics.crawler4j.parser.HtmlParseData;
@@ -15,7 +17,7 @@ import edu.uci.ics.crawler4j.url.WebURL;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
-public class ManowarCrawler extends WebCrawler {
+public class LirycsCrawler extends WebCrawler {
 
 	private final static Pattern FILTERS = Pattern
 			.compile(".*(\\.(css|js|bmp|gif|jpe?g"
@@ -25,7 +27,11 @@ public class ManowarCrawler extends WebCrawler {
 	
 	Map<String, WebURL> visitedUrls = new HashMap<>();
 
-	boolean nextName = false;
+    SongDAO songDAO;
+
+    public LirycsCrawler() {
+            songDAO = new SongDAO();
+    }
 
 	/**
 	 * You should implement this function to specify whether the given url
@@ -34,7 +40,7 @@ public class ManowarCrawler extends WebCrawler {
 	@Override
 	public boolean shouldVisit(WebURL url) {
         String href = url.getURL().toLowerCase();
-        if(!href.startsWith("http://www.lyricsfreak.com/o/ozzy+osbourne/")) return false;
+        if(!href.startsWith("http://megalyrics.ru/lyric/ariia/")) return false;
 		if((href.length() - href.replace(":", "").length()) > 1) return false;
 		if(this.visitedUrls.containsKey(url.getURL())) {
 			return false;
@@ -49,41 +55,33 @@ public class ManowarCrawler extends WebCrawler {
 	 * This function is called when a page is fetched and ready to be processed
 	 * by your program.
 	 */
-	@Override
-	public void visit(Page page) {
-		String url = page.getWebURL().getURL();
-		System.out.println("URL: " + url);
-		try {
-			Thread.sleep(2000L);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+    @Override
+    public void visit(Page page) {
+        String url = page.getWebURL().getURL();
+        System.out.println("URL: " + url);
+        try {
+            Thread.sleep(2000L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-		if (page.getParseData() instanceof HtmlParseData) {
-			HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
-			String html = htmlParseData.getHtml();
+        if (page.getParseData() instanceof HtmlParseData) {
+            HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
+            String html = htmlParseData.getHtml();
 
-			// parse html
-			Document doc = Jsoup.parse(html);
-			String songName = doc.select("h2.lyric-song-head").first().text();
-			String songText = doc.select("div#content_h").first().text();
+            // parse html
+            Document doc = Jsoup.parse(html);
+            String songName = doc.select("h3.header").first().text();
+            String songText = doc.select("div.text_inner").first().text();
 
-			if (songText != null && songText != "") {
-			// save to db
-				MongoClient mongoClient = null;
-				try {
-					mongoClient = new MongoClient("localhost", 27017);
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-				}
-				DB db = mongoClient.getDB("testmining");
-				DBCollection coll = db.getCollection("songs");
+            if (songText != null && songText != "") {
+                // save to db
 
-				BasicDBObject song = new BasicDBObject("name", songName)
-						.append("text", songText);
-				coll.insert(song);
-			}
+                BasicDBObject song = new BasicDBObject("name", songName)
+                        .append("text", songText).append("wordsCount", SongAnalyser.countWordsInText(songText));
 
-		}
-	}
+                songDAO.saveSong(song);
+            }
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package db;
 
 import java.net.UnknownHostException;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -16,48 +17,26 @@ import com.mongodb.*;
  */
 public class SongAnalyser {
 
-	MongoClient mongoClient;
-	DB db;
-	DBCollection coll;
+    static public Map<String, Integer> countWordsInText(String text) {
+        Map<String, Integer> wordsCount = new LinkedHashMap<>();
+        Scanner scan = new Scanner(text);
+        while (scan.hasNext()) {
+            String word = scan.next().toLowerCase();
+            word = word.replace(".", "").replace(",", "").replace("!", "").replace("?", "");
+            if (wordsCount.containsKey(word)) {
+                wordsCount.put(word, wordsCount.get(word) + 1);
+            } else wordsCount.put(word, 1);
+        }
+        return wordsCount;
+    }
 
-	public SongAnalyser() throws UnknownHostException {
-		mongoClient = new MongoClient("localhost", 27017);
-		db = mongoClient.getDB("testmining");
-		coll = db.getCollection("songs");
-	}
-
-	public void countWords() throws Exception {
-		System.out.println(coll.count());
-		DBCursor curr = coll.find(new BasicDBObject());
-		while (curr.hasNext()) {
-			DBObject song = curr.next();
-			String text = (String) song.get("text");
-			if(text != null && text != "") {
-				Map<String, Integer> wordsCount = new LinkedHashMap<>();
-				Scanner scan = new Scanner(text);
-				while (scan.hasNext()) {
-					String word = scan.next().toLowerCase();
-					word = word.replace(".", "").replace(",", "").replace("!", "").replace("?", "");
-					if (wordsCount.containsKey(word)) {
-						wordsCount.put(word, wordsCount.get(word) + 1);
-					} else wordsCount.put(word, 1);
-				}
-				BasicDBObject updSong = new BasicDBObject();
-				BasicDBObject obj = new BasicDBObject();
-				obj.put("wordsCount", new BasicDBObject(wordsCount));
-				updSong.append("$set", obj);
-
-				BasicDBObject searchQuery = new BasicDBObject().append("name", song.get("name"));
-				coll.update(searchQuery, updSong);
-			}
-		}
-		System.out.println(coll.count());
-	}
 
 	public Map<String, Integer> getWordsCount() {
 		Map<String, Integer> totalWordsCount = new LinkedHashMap<>();
-		BasicDBObject query = new BasicDBObject("wordsCount", new BasicDBObject("$exists", true));
-		DBCursor cursor = coll.find(query);
+
+        SongDAO dao = new SongDAO();
+		DBCursor cursor = dao.getWordsCounts();
+
 		while (cursor.hasNext()) {
 			Map<String, Integer> wordsCount = (Map<String, Integer>) cursor.next().get("wordsCount");
 			for(Entry<String, Integer> entry : wordsCount.entrySet()) {
@@ -69,4 +48,22 @@ public class SongAnalyser {
 
 		return totalWordsCount;
 	}
+
+
+    public static class ValueComparator implements Comparator<String> {
+
+        Map<String, Integer> base;
+        public ValueComparator(Map<String, Integer> base) {
+            this.base = base;
+        }
+
+        // Note: this comparator imposes orderings that are inconsistent with equals.
+        public int compare(String a, String b) {
+            if (base.get(a) >= base.get(b)) {
+                return -1;
+            } else {
+                return 1;
+            } // returning 0 would merge keys
+        }
+    }
 }

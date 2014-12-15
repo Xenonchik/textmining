@@ -7,7 +7,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtConfig;
 import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 
 public class Controller {
-    public static void parse() throws Exception {
+    public static void parse(String url) throws Exception {
             String crawlStorageFolder = "/data/crawler";
             int numberOfCrawlers = 1;
 
@@ -27,13 +27,13 @@ public class Controller {
              * URLs that are fetched and then the crawler starts following links
              * which are found in these pages
              */
-            controller.addSeed("http://www.lyricsfreak.com/o/ozzy+osbourne/");
+            controller.addSeed(url);
 
             /*
              * Start the crawl. This is a blocking operation, meaning that your code
              * will reach the line after this only when crawling is finished.
              */
-            controller.start(ManowarCrawler.class, numberOfCrawlers);
+            controller.start(LirycsCrawler.class, numberOfCrawlers);
 
     }
 }
